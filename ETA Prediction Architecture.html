@@ -1,0 +1,579 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ETA Prediction Architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#ffffff;--surf:#f5f7fa;--surf2:#ebeef4;--bdr:#d0d8e8;
+  --teal:#007a6e;--amber:#b36b00;--blue:#1a5fba;--purp:#5b3fa0;
+  --red:#b83030;--green:#1a7a6e;--text:#0f1923;--muted:#4a6080;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;
+  padding-inline:20px;padding-block:24px 48px;min-height:100%}
+header{text-align:center;margin-bottom:28px}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;
+  color:var(--teal);text-transform:uppercase;margin-bottom:10px}
+h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(17px,3vw,26px);font-weight:700;
+  color:var(--text);text-wrap:balance;line-height:1.25;margin-bottom:6px}
+header p{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:3px;background:var(--surf);border:1px solid var(--bdr);
+  padding:4px;border-radius:12px;margin-bottom:18px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tb{flex:1;min-width:max-content;padding:8px 16px;border:none;background:transparent;
+  color:var(--muted);font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:500;
+  cursor:pointer;border-radius:8px;transition:all .15s}
+.tb:hover{color:var(--text);background:var(--surf2)}
+.tb.on{background:var(--teal);color:#ffffff;font-weight:700}
+.panel{display:none}.panel.on{display:block}
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:16px;padding:28px 24px 24px}
+.ch{margin-bottom:20px}
+.ch h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:3px}
+.ch p{font-size:12.5px;color:var(--muted)}
+.sw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sw svg{display:block;margin:0 auto;height:auto;max-width:100%}
+.subfig{margin-top:24px}
+.subfig-label{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;
+  color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px;
+  padding-bottom:8px;border-bottom:1px solid var(--bdr)}
+.stats{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.stat{flex:1;min-width:90px;background:var(--surf2);border:1px solid var(--bdr);
+  border-radius:10px;padding:12px 14px;text-align:center}
+.sv{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--teal);line-height:1}
+.sl{font-size:10.5px;color:var(--muted);margin-top:4px}
+.p3grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+@media(max-width:700px){.p3grid{grid-template-columns:1fr}}
+</style>
+
+<header>
+  <div class="eyebrow">Riyan Wankhede · 23BCE9287 · VIT-AP University</div>
+  <h1>Adaptive ETA Prediction — System Architecture</h1>
+  <p>ML · NLP · Reinforcement Learning pipeline for inland waterway cargo logistics</p>
+</header>
+
+<div class="tabs">
+  <button class="tb on" onclick="show(0)">System Overview</button>
+  <button class="tb"    onclick="show(1)">Phase 1 — DNN</button>
+  <button class="tb"    onclick="show(2)">Phase 2 — NLP</button>
+  <button class="tb"    onclick="show(3)">Phase 3 — RL</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="panel on">
+  <div class="card">
+    <div class="ch"><h2>End-to-End Pipeline</h2><p>Three integrated components transforming raw voyage data and operational logs into adaptive ETA predictions</p></div>
+    <div class="sw"><svg id="s0" viewBox="0 0 960 280" width="960"></svg></div>
+    <div class="stats">
+      <div class="stat"><div class="sv">1,000</div><div class="sl">Voyage Samples</div></div>
+      <div class="stat"><div class="sv">137.89</div><div class="sl">Base MAE (min)</div></div>
+      <div class="stat"><div class="sv">135.61</div><div class="sl">Adaptive MAE (min)</div></div>
+      <div class="stat"><div class="sv">+1.65%</div><div class="sl">RL Improvement</div></div>
+      <div class="stat"><div class="sv">0.9801</div><div class="sl">Final R²</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE 1 -->
+<div class="panel">
+  <div class="card">
+    <div class="ch"><h2>Phase 1 — Deep Neural Network (ETAModel)</h2><p>PyTorch MLP · BatchNorm + Dropout regularisation · Early stopping epoch 83 · ReduceLROnPlateau</p></div>
+    <div class="sw"><svg id="s1" viewBox="-80 0 1040 480" width="1040"></svg></div>
+    <div class="stats">
+      <div class="stat"><div class="sv">11,585</div><div class="sl">Parameters</div></div>
+      <div class="stat"><div class="sv">128·64·32</div><div class="sl">Hidden Units</div></div>
+      <div class="stat"><div class="sv">137.89</div><div class="sl">Test MAE (min)</div></div>
+      <div class="stat"><div class="sv">0.9773</div><div class="sl">R² Score</div></div>
+      <div class="stat"><div class="sv">Epoch 83</div><div class="sl">Early Stop</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE 2 -->
+<div class="panel">
+  <div class="card">
+    <div class="ch"><h2>Phase 2 — Hybrid NLP Severity Extractor</h2><p>3-step cascade: clear-phrase shortcut → keyword weighted average → DistilBERT sentiment fallback</p></div>
+    <!-- Two-column layout: flowchart left, legend right -->
+    <div style="display:grid;grid-template-columns:1fr 200px;gap:20px;align-items:start">
+      <div class="sw"><svg id="s2" viewBox="0 0 640 700" width="640"></svg></div>
+      <div><svg id="s2leg" viewBox="0 0 200 340" width="200"></svg></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="sv">35</div><div class="sl">Domain Keywords</div></div>
+      <div class="stat"><div class="sv">20</div><div class="sl">Log Pool Entries</div></div>
+      <div class="stat"><div class="sv">0 → 1</div><div class="sl">Severity Range</div></div>
+      <div class="stat"><div class="sv">DistilBERT</div><div class="sl">Fallback Model</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE 3 -->
+<div class="panel">
+  <div class="card">
+    <div class="ch"><h2>Phase 3 — Q-Learning Reinforcement Learning Agent</h2><p>Tabular Q-learning · exponential ε-greedy decay · proportional ETA adjustments · normalised improvement reward</p></div>
+
+    <!-- Sub-figure A: MDP Loop -->
+    <div class="subfig">
+      <div class="subfig-label">A — MDP Episode Loop</div>
+      <div class="sw"><svg id="s3a" viewBox="0 0 700 380" width="700"></svg></div>
+    </div>
+
+    <!-- Sub-figure B+C side by side -->
+    <div class="p3grid" style="margin-top:20px">
+      <div class="subfig">
+        <div class="subfig-label">B — Q-Table Heatmap</div>
+        <div class="sw"><svg id="s3b" viewBox="0 0 340 280" width="340"></svg></div>
+      </div>
+      <div class="subfig">
+        <div class="subfig-label">C — Action Space</div>
+        <div class="sw"><svg id="s3c" viewBox="0 0 340 280" width="340"></svg></div>
+      </div>
+    </div>
+
+    <!-- Sub-figure D: Hyperparams -->
+    <div class="subfig">
+      <div class="subfig-label">D — Hyperparameter Summary</div>
+      <div class="sw"><svg id="s3d" viewBox="0 0 700 200" width="700"></svg></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="sv">210</div><div class="sl">State Space</div></div>
+      <div class="stat"><div class="sv">5</div><div class="sl">Discrete Actions</div></div>
+      <div class="stat"><div class="sv">5,000</div><div class="sl">Episodes</div></div>
+      <div class="stat"><div class="sv">85/210</div><div class="sl">States Visited</div></div>
+      <div class="stat"><div class="sv">0.1253</div><div class="sl">Q-max</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg';
+
+function show(i){
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('on',j===i));
+  document.querySelectorAll('.tb').forEach((b,j)=>b.classList.toggle('on',j===i));
+}
+
+function el(tag,a,p){
+  const e=document.createElementNS(NS,tag);
+  for(const[k,v] of Object.entries(a)) e.setAttribute(k,String(v));
+  if(p) p.appendChild(e);
+  return e;
+}
+function txt(svg,x,y,s,a){
+  const t=el('text',{x,y,'text-anchor':'middle','dominant-baseline':'middle',
+    'font-family':'Inter,system-ui,sans-serif','font-size':12,fill:'#0f1923',...a});
+  t.textContent=s; svg.appendChild(t);
+}
+function rect(svg,cx,cy,w,h,fill,stroke,rx){
+  el('rect',{x:cx-w/2,y:cy-h/2,width:w,height:h,rx:rx??10,fill,
+    stroke:stroke||'none','stroke-width':1.8},svg);
+}
+function mkr(defs,id,col){
+  const m=el('marker',{id,markerWidth:8,markerHeight:8,refX:7,refY:4,orient:'auto'});
+  el('polygon',{points:'0,1 8,4 0,7',fill:col},m); defs.appendChild(m);
+}
+function arrow(svg,x1,y1,x2,y2,col){
+  const dx=x2-x1,dy=y2-y1,d=Math.hypot(dx,dy)||1;
+  el('line',{x1,y1,x2:x2-(dx/d)*9,y2:y2-(dy/d)*9,stroke:col,'stroke-width':2,
+    'marker-end':`url(#mk${col.slice(1)})`},svg);
+}
+function curve(svg,d,col){
+  el('path',{d,stroke:col,'stroke-width':2,fill:'none',
+    'marker-end':`url(#mk${col.slice(1)})`},svg);
+}
+
+/* ══════════════════════════════════════════════════════════
+   OVERVIEW
+══════════════════════════════════════════════════════════ */
+(function(){
+  const svg=document.getElementById('s0');
+  const defs=el('defs',{},svg);
+  const BLUE='#1a5fba',TEAL='#007a6e',PURP='#5b3fa0',AMBER='#b36b00',GREEN='#1a7a6e';
+  [BLUE,TEAL,PURP,AMBER,GREEN,'#8098b8'].forEach(c=>mkr(defs,'mk'+c.slice(1),c));
+
+  const CY=110, BW=150, BH=66;
+  const stages=[
+    {x:96,  label:'Dataset',     sub:'Voyage Data',         color:BLUE,  tag:null,
+     lines:['1,000 samples','5 features','80/20 split']},
+    {x:288, label:'DNN Model',   sub:'Base ETA Predictor',  color:TEAL,  tag:'Phase 1',
+     lines:['PyTorch MLP','11,585 params','MAE 137.89']},
+    {x:480, label:'NLP Module',  sub:'Severity Extractor',  color:PURP,  tag:'Phase 2',
+     lines:['3-step hybrid','35 keywords','DistilBERT']},
+    {x:672, label:'RL Agent',    sub:'Q-Learning',          color:AMBER, tag:'Phase 3',
+     lines:['210 states','5 actions','5,000 episodes']},
+    {x:864, label:'Adaptive ETA',sub:'Final Prediction',    color:GREEN, tag:'Output',
+     lines:['MAE 135.61','R² 0.9801','+1.65%']},
+  ];
+
+  el('rect',{x:20,y:CY-3,width:920,height:6,rx:3,fill:'#d0d8e8'},svg);
+
+  stages.forEach((s,i)=>{
+    if(s.tag){
+      rect(svg,s.x,CY-BH/2-17,56,16,s.color+'22','none',7);
+      txt(svg,s.x,CY-BH/2-17,s.tag,{fill:s.color,'font-size':8.5,'font-family':'JetBrains Mono,monospace','font-weight':'600','letter-spacing':'0.06em'});
+    }
+    el('ellipse',{cx:s.x,cy:CY,rx:80,ry:44,fill:s.color+'18'},svg);
+    rect(svg,s.x,CY,BW,BH,'#ffffff',s.color,12);
+    txt(svg,s.x,CY-13,s.label,{fill:s.color,'font-size':14,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+    txt(svg,s.x,CY+6,s.sub,{fill:'#1a2a3a','font-size':10.5});
+    s.lines.forEach((l,j)=>txt(svg,s.x,CY+BH/2+16+j*15,l,{fill:'#4a6080','font-size':10}));
+    if(i<stages.length-1) arrow(svg,s.x+BW/2+2,CY,stages[i+1].x-BW/2-2,CY,'#8098b8');
+  });
+})();
+
+/* ══════════════════════════════════════════════════════════
+   PHASE 1 — DNN
+══════════════════════════════════════════════════════════ */
+(function(){
+  const svg=document.getElementById('s1');
+  const defs=el('defs',{},svg);
+  const BLUE='#1a5fba',TEAL='#007a6e',PURP='#5b3fa0',AMBER='#b36b00',RED='#b83030';
+  [BLUE,TEAL,PURP,AMBER,RED].forEach(c=>mkr(defs,'mk'+c.slice(1),c));
+
+  const NR=13, YPAD=58, H=480;
+  const FEATS=['distance','vessel_speed','river_current','weather_sev.','port_cong.'];
+  const layers=[
+    {x:130,n:5,label:'Input',   count:'5 features',color:BLUE, spec:['5 structured features','StandardScaler normalised']},
+    {x:310,n:9,label:'Hidden 1',count:'128 units', color:TEAL, spec:['Linear(5→128)','BatchNorm · ReLU · Drop 0.30']},
+    {x:500,n:7,label:'Hidden 2',count:'64 units',  color:PURP, spec:['Linear(128→64)','BatchNorm · ReLU · Drop 0.30']},
+    {x:690,n:5,label:'Hidden 3',count:'32 units',  color:AMBER,spec:['Linear(64→32)','BatchNorm · ReLU · Drop 0.15']},
+    {x:860,n:1,label:'Output',  count:'1 neuron',  color:RED,  spec:['Linear(32→1)','ETA prediction (min)']},
+  ];
+
+  layers.forEach(lay=>{
+    if(lay.n===1){lay.ys=[(YPAD+H-YPAD)/2];return;}
+    const step=(H-YPAD*2)/(lay.n-1);
+    lay.ys=Array.from({length:lay.n},(_,i)=>YPAD+i*step);
+  });
+
+  // Connections
+  for(let li=0;li<layers.length-1;li++){
+    const f=layers[li],t=layers[li+1];
+    f.ys.forEach(y1=>t.ys.forEach(y2=>{
+      el('line',{x1:f.x,y1,x2:t.x,y2,stroke:f.color,'stroke-width':0.7,'stroke-opacity':0.09},svg);
+    }));
+  }
+
+  // Glow bands
+  layers.forEach(lay=>{
+    const minY=Math.min(...lay.ys),maxY=Math.max(...lay.ys);
+    el('rect',{x:lay.x-30,y:minY-26,width:60,height:maxY-minY+52,rx:15,
+      fill:lay.color,'fill-opacity':0.05,stroke:lay.color,'stroke-opacity':0.12,'stroke-width':1},svg);
+  });
+
+  // Header labels, then nodes
+  layers.forEach(lay=>{
+    txt(svg,lay.x,16,lay.label,{fill:lay.color,'font-size':13,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+    rect(svg,lay.x,32,92,17,lay.color+'22','none',7);
+    txt(svg,lay.x,32,lay.count,{fill:lay.color,'font-size':10,'font-family':'JetBrains Mono,monospace','font-weight':'600'});
+
+    lay.ys.forEach(y=>{
+      el('circle',{cx:lay.x,cy:y,r:NR,fill:lay.color,stroke:'#ffffff','stroke-width':2.5},svg);
+      el('circle',{cx:lay.x,cy:y-3,r:5,fill:'white','fill-opacity':0.35},svg);
+    });
+
+    const bot=Math.max(...lay.ys);
+    lay.spec.forEach((s,j)=>txt(svg,lay.x,bot+22+j*15,s,{fill:'#4a6080','font-size':9.5}));
+  });
+
+  // Feature labels
+  FEATS.forEach((f,i)=>{
+    const y=layers[0].ys[i];
+    txt(svg,-4,y,f,{fill:'#4a6080','font-size':11,'text-anchor':'end'});
+    el('line',{x1:-1,y1:y,x2:layers[0].x-NR-2,y2:y,stroke:BLUE,'stroke-width':0.9,'stroke-dasharray':'4,3'},svg);
+  });
+
+  // Output arrow
+  const oy=layers[4].ys[0];
+  arrow(svg,860+NR+3,oy,932,oy,RED);
+  txt(svg,948,oy-10,'ETA',{fill:RED,'font-size':13,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+  txt(svg,948,oy+7,'(min)',{fill:'#5E7FA3','font-size':10});
+})();
+
+/* ══════════════════════════════════════════════════════════
+   PHASE 2 — NLP FLOWCHART
+══════════════════════════════════════════════════════════ */
+(function(){
+  const svg=document.getElementById('s2');
+  const defs=el('defs',{},svg);
+  const TEAL='#007a6e',PURP='#5b3fa0',AMBER='#b36b00',RED='#b83030',GREEN='#1a7a6e',BLUE='#1a5fba';
+  [TEAL,PURP,AMBER,RED,GREEN,BLUE].forEach(c=>mkr(defs,'mk'+c.slice(1),c));
+
+  // Layout:
+  // Main flow CX=210, diamond HW=115 → right edge=325
+  // Result boxes RX=510, RW=130 → left edge=445
+  // Arrow gap: 325→437 = 112px — plenty of room
+  // SVG 660 wide × 760 tall
+  const CX=210, HW=115, HH=40;
+  const RX=510, RW=130, RH=54;
+
+  function diamond(x,y,fill,stroke){
+    el('polygon',{points:`${x},${y-HH} ${x+HW},${y} ${x},${y+HH} ${x-HW},${y}`,
+      fill,stroke:stroke||'none','stroke-width':1.8},svg);
+  }
+  function va(y1,y2,col){ arrow(svg,CX,y1,CX,y2,col); }
+  function yesArrow(y){ arrow(svg,CX+HW,y,RX-RW/2-8,y,GREEN); }
+  function yesLabel(y){ txt(svg,(CX+HW+RX-RW/2)/2,y-13,'YES →',{fill:GREEN,'font-size':11,'font-weight':'700'}); }
+  function noLabel(y){ txt(svg,CX+16,y,'NO',{fill:RED,'font-size':11,'font-weight':'700'}); }
+  function resultBox(y,t1,t2,col){
+    rect(svg,RX,y,RW,RH,col+'18',col,10);
+    txt(svg,RX,y-10,t1,{fill:col,'font-size':12,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+    txt(svg,RX,y+9,t2,{fill:'#4a6080','font-size':10});
+  }
+  // small step badge above a y position
+  function badge(y,label,col){
+    rect(svg,CX,y,70,18,col+'22','none',8);
+    txt(svg,CX,y,label,{fill:col,'font-size':9.5,'font-weight':'700','font-family':'JetBrains Mono,monospace','letter-spacing':'0.05em'});
+  }
+  // keyword hint below a diamond
+  function hint(y,s){ txt(svg,CX,y,s,{fill:'#7a92a8','font-size':9.5,'font-style':'italic'}); }
+
+  // ── Row centres ────────────────────────────────────────
+  // Input  cy=44  h=46  → bottom 67
+  // D1     cy=152        → top 112  bottom 192
+  // hint          ↓ 200
+  // D2     cy=302        → top 262  bottom 342
+  // hint          ↓ 350
+  // Bert   cy=418  h=60  → top 388  bottom 448
+  // D3     cy=548        → top 508  bottom 588
+  // Final  cy=658  h=52
+
+  // Input box
+  rect(svg,CX,44,230,46,'#e8f0fb',BLUE,11);
+  txt(svg,CX,37,'Maritime Operational Log',{fill:BLUE,'font-size':12.5,'font-weight':'600','font-family':'Space Grotesk,sans-serif'});
+  txt(svg,CX,53,'"Port congestion near lock terminal…"',{fill:'#4a6080','font-size':10,'font-style':'italic'});
+
+  va(67,104,TEAL);
+  badge(104,'STEP 1',TEAL);
+
+  // Decision 1
+  diamond(CX,152,'#e0f2f0',TEAL);
+  txt(svg,CX,145,'Clear negative phrase?',{fill:TEAL,'font-size':12,'font-weight':'600'});
+  txt(svg,CX,162,'e.g. "smooth" / "all clear"',{fill:'#1a2a3a','font-size':10});
+  yesArrow(152); yesLabel(152); resultBox(152,'Return 0.05','no disruption',GREEN);
+  va(192,222,RED); noLabel(207);
+  hint(232,'"smooth", "no issues", "on schedule", "all clear"…');
+
+  va(238,254,RED);
+  badge(254,'STEP 2',PURP);
+
+  // Decision 2
+  diamond(CX,302,'#ece8f8',PURP);
+  txt(svg,CX,295,'Maritime keyword found?',{fill:PURP,'font-size':12,'font-weight':'600'});
+  txt(svg,CX,312,'storm / fog / lock / congestion…',{fill:'#1a2a3a','font-size':10});
+  yesArrow(302); yesLabel(302); resultBox(302,'Weighted avg','keyword scores',PURP);
+  va(342,372,RED); noLabel(357);
+  hint(382,'"storm 1.0 · fog 0.8 · congestion 0.9 · lock 0.9"');
+
+  va(388,410,RED);
+
+  // DistilBERT
+  rect(svg,CX,418,230,60,'#fdf2e0',AMBER,12);
+  txt(svg,CX,406,'Step 3: DistilBERT Sentiment',{fill:AMBER,'font-size':12.5,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+  txt(svg,CX,422,'Sentiment Classifier',{fill:AMBER,'font-size':11,'font-weight':'600'});
+  txt(svg,CX,438,'distilbert-base-uncased-finetuned-sst-2',{fill:'#4a6080','font-size':9,'font-family':'JetBrains Mono,monospace'});
+
+  va(448,500,AMBER);
+  badge(500,'STEP 3',AMBER);
+
+  // Decision 3
+  diamond(CX,548,'#fdf2e0',AMBER);
+  txt(svg,CX,541,'Sentiment NEGATIVE?',{fill:AMBER,'font-size':12,'font-weight':'600'});
+  txt(svg,CX,558,'DistilBERT score > threshold',{fill:'#1a2a3a','font-size':10});
+  yesArrow(548); yesLabel(548); resultBox(548,'score × 0.6','clipped [0, 1]',AMBER);
+  va(588,618,RED); noLabel(603);
+
+  // Final
+  rect(svg,CX,658,220,52,'#e0f2f0',GREEN,11);
+  txt(svg,CX,648,'(1 − pos_score) × 0.3',{fill:GREEN,'font-size':12,'font-weight':'700','font-family':'JetBrains Mono,monospace'});
+  txt(svg,CX,666,'low-severity return',{fill:'#4a6080','font-size':10.5});
+})();
+
+// Legend separate SVG
+(function(){
+  const svg=document.getElementById('s2leg');
+  txt(svg,100,16,'Severity',{fill:'#0f1923','font-size':13,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+  txt(svg,100,32,'Scale',{fill:'#0f1923','font-size':13,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+  const RED='#b83030',AMBER='#b36b00',PURP='#5b3fa0',BLUE='#1a5fba',TEAL='#007a6e';
+  [['Critical','0.90–1.00',RED],['High','0.70–0.85',AMBER],
+   ['Medium','0.40–0.65',PURP],['Low','0.15–0.35',BLUE],['Minimal','0.00–0.10',TEAL]
+  ].forEach(([name,range,col],i)=>{
+    const y=54+i*56;
+    el('rect',{x:10,y,width:180,height:46,rx:9,fill:col+'18',stroke:col,'stroke-width':1.4},svg);
+    txt(svg,100,y+14,name,{fill:col,'font-size':13,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+    txt(svg,100,y+32,range,{fill:'#4a6080','font-size':10.5,'font-family':'JetBrains Mono,monospace'});
+  });
+})();
+
+/* ══════════════════════════════════════════════════════════
+   PHASE 3A — MDP LOOP
+══════════════════════════════════════════════════════════ */
+(function(){
+  const svg=document.getElementById('s3a');
+  const defs=el('defs',{},svg);
+  const TEAL='#007a6e',AMBER='#b36b00',PURP='#5b3fa0',BLUE='#1a5fba',RED='#b83030';
+  [TEAL,AMBER,PURP,BLUE,RED].forEach(c=>mkr(defs,'mk'+c.slice(1),c));
+
+  const CX=350, CY=200;
+  // 4 boxes at top/right/bottom/left
+  const mboxes=[
+    {x:CX,      y:CY-120, label:'STATE',  sub:'(eta_bucket, sev_bucket)', color:BLUE,  bg:'#e8f0fb'},
+    {x:CX+180,  y:CY,     label:'ACTION', sub:'ε-greedy from Q-table',    color:TEAL,  bg:'#e0f2f0'},
+    {x:CX,      y:CY+120, label:'REWARD', sub:'(|base_err|−|adj_err|)/eta',color:AMBER,bg:'#fdf2e0'},
+    {x:CX-180,  y:CY,     label:'AGENT',  sub:'Q[s,a]+=α(r+γ·maxQ−Q)',   color:PURP,  bg:'#ece8f8'},
+  ];
+  mboxes.forEach(b=>{
+    rect(svg,b.x,b.y,180,60,b.bg,b.color,13);
+    txt(svg,b.x,b.y-11,b.label,{fill:b.color,'font-size':14,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+    txt(svg,b.x,b.y+7,b.sub,{fill:'#4a6080','font-size':9.5,'font-family':'JetBrains Mono,monospace'});
+  });
+
+  // ENV circle
+  el('circle',{cx:CX,cy:CY,r:42,fill:'#f5f7fa',stroke:'#d0d8e8','stroke-width':2},svg);
+  txt(svg,CX,CY-8,'ENV',{fill:'#4a6080','font-size':13,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+  txt(svg,CX,CY+9,'ETAEnvironment',{fill:'#7a92a8','font-size':9.5});
+
+  // Arrows: bezier curves connecting the boxes in a loop
+  // STATE(CX,80) → ACTION(530,200): arc top-right
+  curve(svg,`M${CX+90},${CY-120} Q${CX+180},${CY-120} ${CX+180},${CY-30}`,TEAL);
+  txt(svg,CX+218,CY-90,'observe',{fill:'#4a6080','font-size':10,'font-style':'italic'});
+
+  // ACTION(530,200) → REWARD(350,320): arc right-bottom
+  curve(svg,`M${CX+180},${CY+30} Q${CX+180},${CY+120} ${CX+90},${CY+120}`,AMBER);
+  txt(svg,CX+222,CY+90,'step()',{fill:'#4a6080','font-size':10,'font-style':'italic'});
+
+  // REWARD(350,320) → AGENT(170,200): arc bottom-left
+  curve(svg,`M${CX-90},${CY+120} Q${CX-180},${CY+120} ${CX-180},${CY+30}`,PURP);
+  txt(svg,CX-228,CY+90,'update Q',{fill:'#4a6080','font-size':10,'font-style':'italic'});
+
+  // AGENT(170,200) → STATE(350,80): arc left-top
+  curve(svg,`M${CX-180},${CY-30} Q${CX-180},${CY-120} ${CX-90},${CY-120}`,BLUE);
+  txt(svg,CX-222,CY-90,'new state',{fill:'#4a6080','font-size':10,'font-style':'italic'});
+
+  // Step labels
+  txt(svg,80,22,'Episode start: sample voyage + log',{fill:'#4a6080','font-size':11,'text-anchor':'start'});
+  txt(svg,80,38,'ε-greedy: explore (random) or exploit (Q-table)',{fill:'#4a6080','font-size':11,'text-anchor':'start'});
+})();
+
+/* ══════════════════════════════════════════════════════════
+   PHASE 3B — Q-TABLE HEATMAP
+══════════════════════════════════════════════════════════ */
+(function(){
+  const svg=document.getElementById('s3b');
+  const defs=el('defs',{},svg);
+  const TEAL='#007a6e';
+  const COLS=21,ROWS=10,CW=13,CH=18;
+  const GX=38,GY=40;
+
+  txt(svg,GX+COLS*CW/2,16,'Q-Table States',{fill:'#0f1923','font-size':13,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+  txt(svg,GX+COLS*CW/2,30,'85 / 210 populated',{fill:'#4a6080','font-size':10.5});
+
+  el('rect',{x:GX-2,y:GY-2,width:COLS*CW+4,height:ROWS*CH+4,rx:5,fill:'#ebeef4',stroke:'#d0d8e8','stroke-width':1},svg);
+
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const active=(r>=2&&r<=7&&c>=4&&c<=16);
+      const q=active?Math.max(0,0.05+Math.sin(r*0.9+c*0.4)*0.04+Math.cos(r*0.5)*0.03):0;
+      const t=Math.min(1,q*14);
+      let fill='#ebeef4';
+      if(t>0.04){
+        const rr=Math.round(220-t*120),gg=Math.round(240-t*60),bb=Math.round(235-t*80);
+        fill=`rgb(${rr},${gg},${bb})`;
+      }
+      el('rect',{x:GX+c*CW,y:GY+r*CH,width:CW-1,height:CH-1,rx:2,fill},svg);
+    }
+  }
+
+  // Axis labels
+  txt(svg,GX+COLS*CW/2,GY+ROWS*CH+14,'Severity Bucket (0–20)',{fill:'#4a6080','font-size':9.5});
+  const axT=el('text',{x:GX-22,y:GY+ROWS*CH/2,'font-size':9.5,fill:'#4a6080','text-anchor':'middle',
+    transform:`rotate(-90,${GX-22},${GY+ROWS*CH/2})`});
+  axT.textContent='ETA Bucket (0–9)'; svg.appendChild(axT);
+
+  // Legend
+  const grad=el('linearGradient',{id:'qg',x1:'0',x2:'1',y1:'0',y2:'0'},defs);
+  el('stop',{'offset':'0%','stop-color':'#ebeef4'},grad);
+  el('stop',{'offset':'100%','stop-color':TEAL},grad);
+  const lgY=GY+ROWS*CH+28;
+  el('rect',{x:GX,y:lgY,width:COLS*CW,height:9,rx:3,fill:'url(#qg)'},svg);
+  txt(svg,GX,lgY+20,'0',{fill:'#4a6080','font-size':9,'text-anchor':'start'});
+  txt(svg,GX+COLS*CW,lgY+20,'High Q',{fill:TEAL,'font-size':9,'text-anchor':'end'});
+})();
+
+/* ══════════════════════════════════════════════════════════
+   PHASE 3C — ACTION SPACE
+══════════════════════════════════════════════════════════ */
+(function(){
+  const svg=document.getElementById('s3c');
+  const GREEN='#1a7a6e',BLUE='#1a5fba',PURP='#5b3fa0',AMBER='#b36b00',RED='#b83030';
+  const actions=[
+    {a:'A0: 0%',  desc:'No adjustment',  h:10,  col:GREEN},
+    {a:'A1: +2%', desc:'+2% of base ETA',h:44,  col:BLUE},
+    {a:'A2: +5%', desc:'+5% of base ETA',h:78,  col:PURP},
+    {a:'A3: +10%',desc:'+10% of base',   h:112, col:AMBER},
+    {a:'A4: +20%',desc:'+20% of base',   h:146, col:RED},
+  ];
+
+  txt(svg,170,16,'Action Space (5 Discrete)',{fill:'#0f1923','font-size':13,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+  txt(svg,170,30,'Proportional ETA adjustments',{fill:'#4a6080','font-size':10.5});
+
+  const barBase=210, barW=34, gap=20;
+  const totalW=actions.length*(barW+gap)-gap;
+  const startX=(340-totalW)/2+barW/2;
+
+  actions.forEach((a,i)=>{
+    const bx=startX+i*(barW+gap);
+    const top=barBase-a.h;
+    el('rect',{x:bx-barW/2,y:top,width:barW,height:Math.max(a.h,4),rx:5,fill:a.col,'fill-opacity':0.85},svg);
+    txt(svg,bx,top-10,a.a,{fill:a.col,'font-size':10,'font-weight':'700'});
+    // Desc below
+    txt(svg,bx,barBase+14,a.desc.split(' ')[0],{fill:'#4a6080','font-size':8.5});
+    if(a.desc.split(' ').length>1)
+      txt(svg,bx,barBase+24,a.desc.split(' ').slice(1).join(' '),{fill:'#4a6080','font-size':8.5});
+  });
+
+  // Baseline
+  el('line',{x1:startX-barW,y1:barBase,x2:startX+(actions.length-0.5)*(barW+gap),y2:barBase,
+    stroke:'#d0d8e8','stroke-width':1.5},svg);
+  txt(svg,170,barBase+38,'Greedy policy selects action maximising Q[state, action]',{fill:'#4a6080','font-size':9.5});
+})();
+
+/* ══════════════════════════════════════════════════════════
+   PHASE 3D — HYPERPARAMS TABLE
+══════════════════════════════════════════════════════════ */
+(function(){
+  const svg=document.getElementById('s3d');
+  const TEAL='#007a6e',AMBER='#b36b00',PURP='#5b3fa0',BLUE='#1a5fba',RED='#b83030',GREEN='#1a7a6e';
+
+  const params=[
+    ['Episodes',      '5,000',       TEAL],
+    ['State space',   '10 × 21 = 210',BLUE],
+    ['Actions',       '5 proportional fractions',PURP],
+    ['α (learn rate)','0.10',        AMBER],
+    ['γ (discount)',  '0.90',        AMBER],
+    ['ε start → min', '1.00 → 0.05', RED],
+    ['ε decay rate',  '0.003 exponential',GREEN],
+    ['Q initialise',  '0.01 (optimistic)',BLUE],
+    ['States visited','85 / 210 (40.5%)',TEAL],
+    ['Q-max achieved','0.1253',      PURP],
+  ];
+
+  const cols=2, rows=Math.ceil(params.length/cols);
+  const CW=340, PH=18, PX=[20,360];
+
+  params.forEach(([k,v,col],i)=>{
+    const col_i=Math.floor(i/rows);
+    const row_i=i%rows;
+    const x=PX[col_i], y=10+row_i*(PH+6);
+    el('rect',{x,y,width:CW-10,height:PH,rx:6,fill:col+'12'},svg);
+    const t1=el('text',{'text-anchor':'start','dominant-baseline':'middle','font-family':'JetBrains Mono,monospace',
+      'font-size':10.5,fill:'#4a6080',x:x+10,y:y+PH/2});
+    t1.textContent=k; svg.appendChild(t1);
+    const t2=el('text',{'text-anchor':'end','dominant-baseline':'middle','font-family':'JetBrains Mono,monospace',
+      'font-size':10.5,'font-weight':'600',fill:col,x:x+CW-18,y:y+PH/2});
+    t2.textContent=v; svg.appendChild(t2);
+  });
+})();
+</script>
+
+</body></html>
