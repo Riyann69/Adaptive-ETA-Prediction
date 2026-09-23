@@ -59,7 +59,7 @@ Traditional ETA systems rely only on structured numerical data and produce stati
 
 
 
-![ETA Prediction Comparison](figures\fig_base_vs_adaptive.png)
+![ETA Prediction Comparison](figures/fig_base_vs_adaptive.png)
 
 ---
 
