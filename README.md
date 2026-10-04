@@ -2,17 +2,24 @@
 
 **Riyan Wankhede | 23BCE9287 | VIT-AP University**
 
-An end-to-end machine learning pipeline for predicting and adaptively adjusting Estimated Time of Arrival (ETA) for inland waterway cargo vessels, combining deep learning, NLP, and reinforcement learning.
+An end-to-end machine learning pipeline for predicting and adaptively adjusting Estimated Time of Arrival (ETA) for inland
+waterway cargo vessels, combining deep learning, NLP, and reinforcement learning.
 
-**Result (leak-free, 5 seeds, 1,000 synthetic voyages):** delay severity extracted from operational text is a useful signal.
-A two-parameter linear correction on it lowers the network's ETA error by **7.6 %** on average. The Q-learning layer does **not**
-give a reliable gain once the evaluation leaks found in an [audit](evaluation_audit.ipynb) are removed (+0.7 % ± 4.6 %).
+**Result (5 seeds, 1,000 synthetic voyages):** delay severity extracted from operational text is a useful signal. A
+two-parameter linear correction on it lowers the network's ETA error by **7.6 %** on average, while a Q-learning agent using
+the same signal does not improve on the network (−0.4 % ± 2.8 %).
+
+![Gain of each correction over the DNN, 5 seeds](figures/fig_multi_seed.png)
 
 ---
 
+
+
 ## Overview
 
-Traditional ETA systems rely only on structured numerical data and produce static predictions. This system integrates three components to handle dynamic operational conditions reported through unstructured text (captain logs, port authority messages, maintenance reports).
+Traditional ETA systems rely only on structured numerical data and produce static predictions. This system adds a signal
+from unstructured operational text (captain logs, port authority messages, maintenance reports) and compares two ways of
+using it to correct the network's prediction: a Q-learning agent and a linear correction.
 
 ---
 
@@ -24,71 +31,69 @@ Traditional ETA systems rely only on structured numerical data and produce stati
 
 ### 1. Base ETA Prediction (Deep Learning)
 
-- PyTorch MLP: `Input(5) → 128 → 64 → 32 → Output(1)`
-- Batch normalisation + dropout at each hidden layer
+- PyTorch MLP: `Input(5) → 128 → 64 → 32 → Output(1)`, batch normalisation + dropout at each hidden layer, MSE loss
 - Trained on 5 structured features: distance, vessel speed, river current, weather severity, port congestion
-- Original single-seed result: test MAE 137.89 min, R² 0.9773 (early stopping monitored the test set; see the audit below)
+- Early stopping on a held-out validation split
 
 
 
 ### 2. Delay Signal Extraction (NLP)
 
-- Three-tier pipeline: phrase shortcuts → 35-keyword weighted average → DistilBERT fallback
+- Three-tier pipeline: 8 clear-condition phrases → weighted average over a 33-keyword lexicon → DistilBERT sentiment fallback
 - Outputs a delay severity score between 0 and 1
-- Example keywords: `storm → 1.0`, `congestion → 0.9`, `fog → 0.8`, `smooth → 0.1`
+- Example keywords: `storm → 1.0`, `congestion → 0.9`, `fog → 0.8`, `smooth → 0.05`
 
 
 
-### 3. Adaptive ETA Adjustment (Reinforcement Learning)
+### 3. Adaptive ETA Adjustment
 
-- Q-Learning agent with 210 states (10 ETA bins × 21 severity bins)
-- 5 discrete actions: `[0%, 2%, 5%, 10%, 20%]` ETA increase
-- Reward: `r = (|err_base| − |err_adj|) / base_eta`
-- Trained over 5,000 episodes with ε-greedy exploration (ε: 1.0 → 0.05)
-- Original single-seed result: MAE 135.61 min, R² 0.9801, MAE Δ −1.65 % (leaky protocol; see the audit below)
+- **Q-learning:** 210 states (10 ETA bins × 21 severity bins), 5 actions `[0%, 2%, 5%, 10%, 20%]` ETA increase,
+reward `r = (|err_base| − |err_adj|) / base_eta`, 5,000 one-step episodes (each voyage is a single decision) with
+ε-greedy exploration (ε: 1.0 → 0.05)
+- **Linear correction:** `ETA × (1 + a + b · severity)`, with `a` and `b` fitted by least squares on training voyages
+- **Constant bias correction** (no text) as a control: one multiplicative factor fitted on training voyages
 
 ---
 
 
 
-## Results (evaluation audit)
+## Evaluation protocol
 
-[`evaluation_audit.ipynb`](evaluation_audit.ipynb) replays this project's own code and re-evaluates it over 5 random seeds
-with a leak-free protocol. It found three problems in the original evaluation:
+- Train / validation / test = 640 / 160 / 200 voyages; the test set is never used for training or model selection
+- The Q-learning agent and both corrections are fitted on training voyages only
+- Every voyage's delay severity comes from its log text, never from its true arrival time
+- `[multi_seed_evaluation.ipynb](multi_seed_evaluation.ipynb)` repeats the full pipeline with 5 seeds; gains are paired
+against the DNN from the same seed, because the absolute MAE varies by about ±16 minutes between seeds
 
-1. **The test-time correction used the true arrival time.** Each test voyage's severity was derived from
-   `actual_eta − base_eta`, i.e. from the value being predicted, instead of from the operational log.
-2. **The Q-learning agent was trained on all voyages**, including the 200 test voyages.
-3. **Early stopping monitored the test set**, which made the DNN look 5.8 % better than proper validation does.
 
-Leak-free protocol: train / validation / test = 640 / 160 / 200; early stopping on validation; the agent trains on training
-voyages only; every voyage's severity comes from its matched log text. Gains are paired against the DNN from the same seed.
 
-| Method | MAE (min), mean ± sd | Gain vs DNN, mean ± sd |
-| --- | --- | --- |
-| DNN alone | 152.9 ± 16.4 | — |
-| + constant bias correction (no text) | 151.5 ± 17.7 | +1.0 % ± 3.5 % |
-| + NLP severity → Q-learning | 151.5 ± 15.0 | +0.7 % ± 4.6 % |
-| **+ NLP severity → linear correction** | **141.5 ± 19.6** | **+7.6 % ± 5.4 %** |
+## Results
 
-![Evaluation audit](figures/fig_evaluation_audit.png)
 
-**What this means:** the text-derived severity signal works. The adjustment is a single decision per voyage with no next
-state (a contextual bandit, not a sequential RL problem), so a direct regression on severity uses the signal better than
-five discrete actions over 210 states. The linear correction beats Q-learning in 4 of 5 seeds.
+| Method                                 | MAE (min), mean ± sd | Gain vs DNN, mean ± sd |
+| -------------------------------------- | -------------------- | ---------------------- |
+| DNN alone                              | 152.9 ± 16.4         | —                      |
+| + constant bias correction (no text)   | 151.5 ± 17.7         | +1.0 % ± 3.5 %         |
+| + NLP severity → Q-learning            | 153.7 ± 19.0         | −0.4 % ± 2.8 %         |
+| **+ NLP severity → linear correction** | **141.5 ± 19.6**     | **+7.6 % ± 5.4 %**     |
 
-**Original published results** (single seed, protocol above not yet fixed; reproduced exactly by the audit):
 
-| Metric    | Base DNN | Adaptive (RL) |
-| --------- | -------- | ------------- |
-| MAE (min) | 137.89   | 135.61        |
-| R²        | 0.9773   | 0.9801        |
-| MAE Δ (%) | -        | -1.65%        |
+The linear correction beats Q-learning in 4 of 5 seeds. The adjustment is a single decision per voyage with no next state
+(a contextual bandit, not a sequential RL problem), so a direct regression on severity uses the signal better than five
+discrete actions over 210 states. The constant correction recovers only a small part of the gain, so the improvement comes
+from the text signal rather than from fixing an overall bias.
 
-![ETA Prediction Comparison](figures/fig_base_vs_adaptive.png)
+![MAE by latent severity band, seed 42](figures/fig_per_severity.png)
 
-With other seeds, the same original notebook gives gains from −1.4 % to +5.4 %. The main notebook is left unchanged so the
-paper's numbers stay reproducible; a note at its evaluation cell points to the audit.
+In the main notebook's run (seed 42), most of the linear correction's gain comes from low-disruption voyages, where the
+network over-predicts (MAE 170 → 87 min).
+
+## Limitations
+
+- The dataset is synthetic. Each voyage's log text is drawn from a fixed pool of 20 messages matched to a hidden disruption
+level, so the NLP signal is cleaner than real operational text would be.
+- The NLP severity scores have not been validated against human annotations.
+- Results are from 5 seeds on 200 test voyages each; the spread across seeds is large relative to the effects.
 
 ---
 
@@ -97,14 +102,13 @@ paper's numbers stay reproducible; a note at its evaluation cell points to the a
 ## Project Structure
 
 ```
-├── Adaptive_ETA_Prediction.ipynb          # Main notebook (end-to-end pipeline)
-├── evaluation_audit.ipynb                 # Leak-free re-evaluation over 5 seeds (~1 min on CPU)
-├── results/evaluation_audit.csv           # Per-seed numbers behind the audit table
+├── Adaptive_ETA_Prediction.ipynb          # Main notebook: end-to-end pipeline, one seed (~30 s on CPU)
+├── multi_seed_evaluation.ipynb            # Same pipeline over 5 seeds (~1 min on CPU)
+├── results/multi_seed_results.csv         # Per-seed numbers behind the results table
+├── figures/                               # Every figure the notebooks save
+├── models/                                # Trained DNN, scalers, Q-table and linear correction (written by Cell 19)
 ├── Research_Paper.pdf                     # IEEE-format research paper
-├── Adaptive_ETA_Prediction_Slides.pdf     # Presentation slides
 ├── ETA_Prediction_Architecture.html       # Interactive system overview (open in a browser)
-├── figures/                               # Every figure the notebook saves
-├── models/                                # Trained DNN, scalers and Q-table
 ├── requirements.txt                       # Python dependencies
 └── README.md
 ```
@@ -119,9 +123,10 @@ paper's numbers stay reproducible; a note at its evaluation cell points to the a
 pip install -r requirements.txt
 ```
 
-Then open and run `Adaptive_ETA_Prediction.ipynb` top to bottom.
+Then open and run `Adaptive_ETA_Prediction.ipynb` top to bottom. The first run downloads DistilBERT (~260 MB) for the NLP
+demo's Tier-3 examples.
 
-**Requirements:** Python 3.8+, PyTorch, Transformers (HuggingFace), scikit-learn, pandas, numpy, matplotlib
+**Requirements:** Python 3.9+, PyTorch, Transformers (HuggingFace), scikit-learn, pandas, numpy, matplotlib
 
 ---
 
@@ -130,9 +135,9 @@ Then open and run `Adaptive_ETA_Prediction.ipynb` top to bottom.
 ## Key Concepts
 
 - **Synthetic dataset** of 1,000 inland waterway voyages
-- **Latent severity** variable in dataset used only for RL reward evaluation (not fed to DNN)
-- **NLP + RL integration**: NLP severity score forms part of the RL state representation
-- Q-table persisted across episodes for stable convergence
+- **Latent severity**: a hidden disruption level that adds 0–30 % travel time. It is never fed to the DNN; it selects each
+voyage's simulated log text, and that text's NLP severity is what the corrections see
+- **NLP + RL integration**: the NLP severity score is part of the Q-learning state, and the input to the linear correction
 
 ---
 

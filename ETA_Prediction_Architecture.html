@@ -65,10 +65,10 @@ header p{color:var(--muted);font-size:13px}
     <div class="sw"><svg id="s0" viewBox="0 0 960 280" width="960"></svg></div>
     <div class="stats">
       <div class="stat"><div class="sv">1,000</div><div class="sl">Voyage Samples</div></div>
-      <div class="stat"><div class="sv">137.89</div><div class="sl">Base MAE (min)</div></div>
-      <div class="stat"><div class="sv">135.61</div><div class="sl">Adaptive MAE (min)</div></div>
-      <div class="stat"><div class="sv">+1.65%</div><div class="sl">RL Improvement</div></div>
-      <div class="stat"><div class="sv">0.9801</div><div class="sl">Final R²</div></div>
+      <div class="stat"><div class="sv">152.9</div><div class="sl">DNN MAE (min, 5-seed mean)</div></div>
+      <div class="stat"><div class="sv">141.5</div><div class="sl">Linear-corrected MAE (min)</div></div>
+      <div class="stat"><div class="sv">+7.6%</div><div class="sl">Linear correction gain</div></div>
+      <div class="stat"><div class="sv">−0.4%</div><div class="sl">Q-learning gain</div></div>
     </div>
   </div>
 </div>
@@ -81,9 +81,9 @@ header p{color:var(--muted);font-size:13px}
     <div class="stats">
       <div class="stat"><div class="sv">11,585</div><div class="sl">Parameters</div></div>
       <div class="stat"><div class="sv">128·64·32</div><div class="sl">Hidden Units</div></div>
-      <div class="stat"><div class="sv">137.89</div><div class="sl">Test MAE (min)</div></div>
-      <div class="stat"><div class="sv">0.9773</div><div class="sl">R² Score</div></div>
-      <div class="stat"><div class="sv">Epoch 83</div><div class="sl">Early Stop</div></div>
+      <div class="stat"><div class="sv">153.61</div><div class="sl">Test MAE (min, seed 42)</div></div>
+      <div class="stat"><div class="sv">0.9686</div><div class="sl">R² Score</div></div>
+      <div class="stat"><div class="sv">Epoch 59</div><div class="sl">Early Stop (validation)</div></div>
     </div>
   </div>
 </div>
@@ -98,7 +98,7 @@ header p{color:var(--muted);font-size:13px}
       <div><svg id="s2leg" viewBox="0 0 200 340" width="200"></svg></div>
     </div>
     <div class="stats">
-      <div class="stat"><div class="sv">35</div><div class="sl">Domain Keywords</div></div>
+      <div class="stat"><div class="sv">33</div><div class="sl">Domain Keywords</div></div>
       <div class="stat"><div class="sv">20</div><div class="sl">Log Pool Entries</div></div>
       <div class="stat"><div class="sv">0 → 1</div><div class="sl">Severity Range</div></div>
       <div class="stat"><div class="sv">DistilBERT</div><div class="sl">Fallback Model</div></div>
@@ -139,8 +139,8 @@ header p{color:var(--muted);font-size:13px}
       <div class="stat"><div class="sv">210</div><div class="sl">State Space</div></div>
       <div class="stat"><div class="sv">5</div><div class="sl">Discrete Actions</div></div>
       <div class="stat"><div class="sv">5,000</div><div class="sl">Episodes</div></div>
-      <div class="stat"><div class="sv">85/210</div><div class="sl">States Visited</div></div>
-      <div class="stat"><div class="sv">0.1253</div><div class="sl">Q-max</div></div>
+      <div class="stat"><div class="sv">79/210</div><div class="sl">States Visited</div></div>
+      <div class="stat"><div class="sv">0.0675</div><div class="sl">Q-max</div></div>
     </div>
   </div>
 </div>
@@ -194,15 +194,15 @@ function curve(svg,d,col){
   const CY=110, BW=150, BH=66;
   const stages=[
     {x:96,  label:'Dataset',     sub:'Voyage Data',         color:BLUE,  tag:null,
-     lines:['1,000 samples','5 features','80/20 split']},
+     lines:['1,000 samples','5 features','640/160/200 split']},
     {x:288, label:'DNN Model',   sub:'Base ETA Predictor',  color:TEAL,  tag:'Phase 1',
-     lines:['PyTorch MLP','11,585 params','MAE 137.89']},
+     lines:['PyTorch MLP','11,585 params','MAE 153.61']},
     {x:480, label:'NLP Module',  sub:'Severity Extractor',  color:PURP,  tag:'Phase 2',
-     lines:['3-step hybrid','35 keywords','DistilBERT']},
+     lines:['3-step hybrid','33 keywords','DistilBERT']},
     {x:672, label:'RL Agent',    sub:'Q-Learning',          color:AMBER, tag:'Phase 3',
      lines:['210 states','5 actions','5,000 episodes']},
     {x:864, label:'Adaptive ETA',sub:'Final Prediction',    color:GREEN, tag:'Output',
-     lines:['MAE 135.61','R² 0.9801','+1.65%']},
+     lines:['Linear +7.6%','Q-learning −0.4%','5-seed mean']},
   ];
 
   el('rect',{x:20,y:CY-3,width:920,height:6,rx:3,fill:'#d0d8e8'},svg);
@@ -312,80 +312,65 @@ function curve(svg,d,col){
       fill,stroke:stroke||'none','stroke-width':1.8},svg);
   }
   function va(y1,y2,col){ arrow(svg,CX,y1,CX,y2,col); }
-  function yesArrow(y){ arrow(svg,CX+HW,y,RX-RW/2-8,y,GREEN); }
-  function yesLabel(y){ txt(svg,(CX+HW+RX-RW/2)/2,y-13,'YES →',{fill:GREEN,'font-size':11,'font-weight':'700'}); }
+  function yesArrow(y){ arrow(svg,CX+HW,y,RX-(RW+20)/2-6,y,GREEN); }
+  function yesLabel(y){ txt(svg,(CX+HW+RX-(RW+20)/2)/2,y-13,'YES →',{fill:GREEN,'font-size':11,'font-weight':'700'}); }
   function noLabel(y){ txt(svg,CX+16,y,'NO',{fill:RED,'font-size':11,'font-weight':'700'}); }
-  function resultBox(y,t1,t2,col){
-    rect(svg,RX,y,RW,RH,col+'18',col,10);
-    txt(svg,RX,y-10,t1,{fill:col,'font-size':12,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
-    txt(svg,RX,y+9,t2,{fill:'#4a6080','font-size':10});
+  function resultBox(y,t1,t2,col,t3){
+    const h=t3?68:RH;
+    rect(svg,RX,y,RW+20,h,col+'18',col,10);
+    txt(svg,RX,y-(t3?17:10),t1,{fill:col,'font-size':12,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+    txt(svg,RX,y+(t3?2:9),t2,{fill:'#4a6080','font-size':10});
+    if(t3) txt(svg,RX,y+18,t3,{fill:'#7a92a8','font-size':9,'font-style':'italic'});
   }
-  // small step badge above a y position
+  // small step badge centred on a y position
   function badge(y,label,col){
     rect(svg,CX,y,70,18,col+'22','none',8);
     txt(svg,CX,y,label,{fill:col,'font-size':9.5,'font-weight':'700','font-family':'JetBrains Mono,monospace','letter-spacing':'0.05em'});
   }
-  // keyword hint below a diamond
-  function hint(y,s){ txt(svg,CX,y,s,{fill:'#7a92a8','font-size':9.5,'font-style':'italic'}); }
 
   // ── Row centres ────────────────────────────────────────
-  // Input  cy=44  h=46  → bottom 67
-  // D1     cy=152        → top 112  bottom 192
-  // hint          ↓ 200
-  // D2     cy=302        → top 262  bottom 342
-  // hint          ↓ 350
-  // Bert   cy=418  h=60  → top 388  bottom 448
-  // D3     cy=548        → top 508  bottom 588
-  // Final  cy=658  h=52
+  // Input cy=44 · D1 cy=152 · D2 cy=302 · DistilBERT cy=455 · D3 cy=548 · Final cy=658
 
   // Input box
   rect(svg,CX,44,230,46,'#e8f0fb',BLUE,11);
   txt(svg,CX,37,'Maritime Operational Log',{fill:BLUE,'font-size':12.5,'font-weight':'600','font-family':'Space Grotesk,sans-serif'});
   txt(svg,CX,53,'"Port congestion near lock terminal…"',{fill:'#4a6080','font-size':10,'font-style':'italic'});
 
-  va(67,104,TEAL);
+  va(67,96,TEAL);
   badge(104,'STEP 1',TEAL);
 
-  // Decision 1
+  // Decision 1: clear-condition phrase
   diamond(CX,152,'#e0f2f0',TEAL);
-  txt(svg,CX,145,'Clear negative phrase?',{fill:TEAL,'font-size':12,'font-weight':'600'});
-  txt(svg,CX,162,'e.g. "smooth" / "all clear"',{fill:'#1a2a3a','font-size':10});
+  txt(svg,CX,145,'Clear-condition phrase?',{fill:TEAL,'font-size':12,'font-weight':'600'});
+  txt(svg,CX,162,'8 phrases, e.g. "all clear"',{fill:'#1a2a3a','font-size':10});
   yesArrow(152); yesLabel(152); resultBox(152,'Return 0.05','no disruption',GREEN);
-  va(192,222,RED); noLabel(207);
-  hint(232,'"smooth", "no issues", "on schedule", "all clear"…');
-
-  va(238,254,RED);
+  va(192,245,RED); noLabel(218);
   badge(254,'STEP 2',PURP);
 
-  // Decision 2
+  // Decision 2: keyword lexicon
   diamond(CX,302,'#ece8f8',PURP);
   txt(svg,CX,295,'Maritime keyword found?',{fill:PURP,'font-size':12,'font-weight':'600'});
-  txt(svg,CX,312,'storm / fog / lock / congestion…',{fill:'#1a2a3a','font-size':10});
-  yesArrow(302); yesLabel(302); resultBox(302,'Weighted avg','keyword scores',PURP);
-  va(342,372,RED); noLabel(357);
-  hint(382,'"storm 1.0 · fog 0.8 · congestion 0.9 · lock 0.9"');
+  txt(svg,CX,312,'33-keyword lexicon',{fill:'#1a2a3a','font-size':10});
+  yesArrow(302); yesLabel(302); resultBox(302,'Weighted average','Σw² / Σw over matches',PURP,'e.g. storm 1.0 · fog 0.8');
+  va(342,399,RED); noLabel(370);
+  badge(408,'STEP 3',AMBER);
 
-  va(388,410,RED);
+  // DistilBERT fallback
+  rect(svg,CX,444,230,52,'#fdf2e0',AMBER,12);
+  txt(svg,CX,436,'DistilBERT sentiment',{fill:AMBER,'font-size':12.5,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
+  txt(svg,CX,454,'distilbert-base-uncased-finetuned-sst-2',{fill:'#4a6080','font-size':9,'font-family':'JetBrains Mono,monospace'});
+  va(470,506,AMBER);
 
-  // DistilBERT
-  rect(svg,CX,418,230,60,'#fdf2e0',AMBER,12);
-  txt(svg,CX,406,'Step 3: DistilBERT Sentiment',{fill:AMBER,'font-size':12.5,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
-  txt(svg,CX,422,'Sentiment Classifier',{fill:AMBER,'font-size':11,'font-weight':'600'});
-  txt(svg,CX,438,'distilbert-base-uncased-finetuned-sst-2',{fill:'#4a6080','font-size':9,'font-family':'JetBrains Mono,monospace'});
-
-  va(448,500,AMBER);
-  badge(500,'STEP 3',AMBER);
-
-  // Decision 3
+  // Decision 3: sentiment label
   diamond(CX,548,'#fdf2e0',AMBER);
-  txt(svg,CX,541,'Sentiment NEGATIVE?',{fill:AMBER,'font-size':12,'font-weight':'600'});
-  txt(svg,CX,558,'DistilBERT score > threshold',{fill:'#1a2a3a','font-size':10});
-  yesArrow(548); yesLabel(548); resultBox(548,'score × 0.6','clipped [0, 1]',AMBER);
-  va(588,618,RED); noLabel(603);
+  txt(svg,CX,541,'Label NEGATIVE?',{fill:AMBER,'font-size':12,'font-weight':'600'});
+  txt(svg,CX,558,'p = classifier confidence',{fill:'#1a2a3a','font-size':10});
+  yesArrow(548); yesLabel(548); resultBox(548,'0.6 × p','high-severity return',AMBER);
+  va(588,630,RED); noLabel(609);
 
   // Final
   rect(svg,CX,658,220,52,'#e0f2f0',GREEN,11);
-  txt(svg,CX,648,'(1 − pos_score) × 0.3',{fill:GREEN,'font-size':12,'font-weight':'700','font-family':'JetBrains Mono,monospace'});
+  txt(svg,CX,648,'0.3 × (1 − p)',{fill:GREEN,'font-size':12,'font-weight':'700','font-family':'JetBrains Mono,monospace'});
   txt(svg,CX,666,'low-severity return',{fill:'#4a6080','font-size':10.5});
 })();
 
@@ -420,7 +405,7 @@ function curve(svg,d,col){
     {x:CX,      y:CY-120, label:'STATE',  sub:'(eta_bucket, sev_bucket)', color:BLUE,  bg:'#e8f0fb'},
     {x:CX+180,  y:CY,     label:'ACTION', sub:'ε-greedy from Q-table',    color:TEAL,  bg:'#e0f2f0'},
     {x:CX,      y:CY+120, label:'REWARD', sub:'(|base_err|−|adj_err|)/eta',color:AMBER,bg:'#fdf2e0'},
-    {x:CX-180,  y:CY,     label:'AGENT',  sub:'Q[s,a]+=α(r+γ·maxQ−Q)',   color:PURP,  bg:'#ece8f8'},
+    {x:CX-180,  y:CY,     label:'AGENT',  sub:'Q[s,a]+=α(r−Q)  (1-step)',   color:PURP,  bg:'#ece8f8'},
   ];
   mboxes.forEach(b=>{
     rect(svg,b.x,b.y,180,60,b.bg,b.color,13);
@@ -466,21 +451,23 @@ function curve(svg,d,col){
   const GX=38,GY=40;
 
   txt(svg,GX+COLS*CW/2,16,'Q-Table States',{fill:'#0f1923','font-size':13,'font-weight':'700','font-family':'Space Grotesk,sans-serif'});
-  txt(svg,GX+COLS*CW/2,30,'85 / 210 populated',{fill:'#4a6080','font-size':10.5});
+  txt(svg,GX+COLS*CW/2,30,'79 / 210 populated',{fill:'#4a6080','font-size':10.5});
 
   el('rect',{x:GX-2,y:GY-2,width:COLS*CW+4,height:ROWS*CH+4,rx:5,fill:'#ebeef4',stroke:'#d0d8e8','stroke-width':1},svg);
 
+  // Real data: max Q-value per state from models/q_table.pkl (main notebook, seed 42); null = never visited
+  const QMAX=[[null, 0.0, null, null, null, null, null, null, 0.0, null, null, 0.0, 0.0, 0.0, 0.0001, null, 0.0, 0.0, null, null, 0.0], [null, 0.0, null, null, null, null, null, null, 0.0, null, null, 0.0, 0.0021, 0.0003, 0.0, null, 0.0, 0.0092, null, null, 0.0], [null, 0.0, null, null, null, null, null, null, 0.0, null, null, 0.0, 0.0031, 0.0158, 0.0048, null, 0.0, 0.0, null, null, 0.0019], [null, 0.0, null, null, null, null, null, null, 0.0, null, null, 0.0031, 0.01, 0.0005, 0.0023, null, 0.0033, 0.0039, null, null, 0.0604], [null, 0.0, null, null, null, null, null, null, 0.0, null, null, 0.0073, 0.0005, 0.0077, 0.0134, null, 0.0028, 0.0007, null, null, 0.0271], [null, 0.0101, null, null, null, null, null, null, 0.0, null, null, 0.004, 0.001, 0.0023, 0.0023, null, 0.0147, 0.0128, null, null, 0.0005], [null, 0.0, null, null, null, null, null, null, 0.0001, null, null, null, null, 0.0003, 0.0019, null, 0.0241, 0.0069, null, null, 0.0087], [null, 0.0073, null, null, null, null, null, null, 0.0039, null, null, 0.0069, 0.0141, 0.0086, null, null, 0.0083, 0.0275, null, null, 0.0175], [null, 0.0066, null, null, null, null, null, null, 0.0134, null, null, 0.0127, null, null, null, null, 0.0053, 0.039, null, null, null], [null, 0.007, null, null, null, null, null, null, 0.0179, null, null, null, null, null, null, null, 0.0675, 0.0165, null, null, 0.0147]];
+  const vals=QMAX.flat().filter(v=>v!==null), lo=Math.min(...vals), hi=Math.max(...vals);
   for(let r=0;r<ROWS;r++){
     for(let c=0;c<COLS;c++){
-      const active=(r>=2&&r<=7&&c>=4&&c<=16);
-      const q=active?Math.max(0,0.05+Math.sin(r*0.9+c*0.4)*0.04+Math.cos(r*0.5)*0.03):0;
-      const t=Math.min(1,q*14);
+      const q=QMAX[r][c];
       let fill='#ebeef4';
-      if(t>0.04){
-        const rr=Math.round(220-t*120),gg=Math.round(240-t*60),bb=Math.round(235-t*80);
+      if(q!==null){
+        const t=(q-lo)/Math.max(hi-lo,1e-9);
+        const rr=Math.round(220-t*220),gg=Math.round(240-t*118),bb=Math.round(235-t*125);
         fill=`rgb(${rr},${gg},${bb})`;
       }
-      el('rect',{x:GX+c*CW,y:GY+r*CH,width:CW-1,height:CH-1,rx:2,fill},svg);
+      el('rect',{x:GX+c*CW,y:GY+(ROWS-1-r)*CH,width:CW-1,height:CH-1,rx:2,fill},svg);
     }
   }
 
@@ -496,8 +483,9 @@ function curve(svg,d,col){
   el('stop',{'offset':'100%','stop-color':TEAL},grad);
   const lgY=GY+ROWS*CH+28;
   el('rect',{x:GX,y:lgY,width:COLS*CW,height:9,rx:3,fill:'url(#qg)'},svg);
-  txt(svg,GX,lgY+20,'0',{fill:'#4a6080','font-size':9,'text-anchor':'start'});
-  txt(svg,GX+COLS*CW,lgY+20,'High Q',{fill:TEAL,'font-size':9,'text-anchor':'end'});
+  txt(svg,GX,lgY+20,`max Q ${lo.toFixed(3)}`,{fill:'#4a6080','font-size':9,'text-anchor':'start'});
+  txt(svg,GX+COLS*CW,lgY+20,`${hi.toFixed(3)}`,{fill:TEAL,'font-size':9,'text-anchor':'end'});
+  txt(svg,GX+COLS*CW/2,lgY+20,'grey = never visited',{fill:'#4a6080','font-size':9});
 })();
 
 /* ══════════════════════════════════════════════════════════
@@ -550,12 +538,12 @@ function curve(svg,d,col){
     ['State space',   '10 × 21 = 210',BLUE],
     ['Actions',       '5 proportional fractions',PURP],
     ['α (learn rate)','0.10',        AMBER],
-    ['γ (discount)',  '0.90',        AMBER],
+    ['γ (discount)',  'unused: 1-step episodes',AMBER],
     ['ε start → min', '1.00 → 0.05', RED],
     ['ε decay rate',  '0.003 exponential',GREEN],
     ['Q initialise',  '0.01 (optimistic)',BLUE],
-    ['States visited','85 / 210 (40.5%)',TEAL],
-    ['Q-max achieved','0.1253',      PURP],
+    ['States visited','79 / 210 (37.6%)',TEAL],
+    ['Q-max achieved','0.0675',      PURP],
   ];
 
   const cols=2, rows=Math.ceil(params.length/cols);
