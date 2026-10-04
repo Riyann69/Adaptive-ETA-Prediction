@@ -4,6 +4,9 @@
 
 An end-to-end machine learning pipeline for predicting and adaptively adjusting Estimated Time of Arrival (ETA) for inland waterway cargo vessels, combining deep learning, NLP, and reinforcement learning.
 
+**Result:** on 1,000 synthetic voyages, the base network predicts ETA with R² 0.977 (MAE 138 min), and the reinforcement-learning
+adjustment driven by text-derived delay severity lowers MAE by a further 1.65 % (to 136 min).
+
 ---
 
 ## Overview
@@ -68,10 +71,13 @@ Traditional ETA systems rely only on structured numerical data and produce stati
 ## Project Structure
 
 ```
-├── Adaptive_ETA_Prediction.ipynb   # Main notebook (end-to-end pipeline)
-├── Research_Paper.pdf              # IEEE-format research paper
-├── requirements.txt                # Python dependencies
-├── ETA Prediction Architecture     # System Overview 
+├── Adaptive_ETA_Prediction.ipynb          # Main notebook (end-to-end pipeline)
+├── Research_Paper.pdf                     # IEEE-format research paper
+├── Adaptive_ETA_Prediction_Slides.pdf     # Presentation slides
+├── ETA_Prediction_Architecture.html       # Interactive system overview (open in a browser)
+├── figures/                               # Every figure the notebook saves
+├── models/                                # Trained DNN, scalers and Q-table
+├── requirements.txt                       # Python dependencies
 └── README.md
 ```
 
