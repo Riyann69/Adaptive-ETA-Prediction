@@ -1,6 +1,6 @@
 # Adaptive ETA Prediction for Inland Waterway Cargo
 
-**Riyan Wankhede | 23BCE9287 | VIT-AP University**
+**Riyan Wankhede | 23BCE9287 | VIT University**
 
 An end-to-end machine learning pipeline for predicting and adaptively adjusting Estimated Time of Arrival (ETA) for inland
 waterway cargo vessels, combining deep learning, NLP, and reinforcement learning.
@@ -147,7 +147,7 @@ voyage's simulated log text, and that text's NLP severity is what the correction
 
 If you use this work, please cite:
 
-> Wankhede, R. (2026). *Adaptive ETA Prediction for Inland Waterway Cargo Using Machine Learning, NLP, and Reinforcement Learning*. VIT-AP University.
+> Wankhede, R. (2026). *Adaptive ETA Prediction for Inland Waterway Cargo Using Machine Learning, NLP, and Reinforcement Learning*. VIT University.
 
 ---
 
